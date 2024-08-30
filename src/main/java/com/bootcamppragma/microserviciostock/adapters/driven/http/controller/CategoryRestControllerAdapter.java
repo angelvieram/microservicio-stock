@@ -6,6 +6,7 @@ import com.bootcamppragma.microserviciostock.adapters.driven.http.mapper.ICatego
 import com.bootcamppragma.microserviciostock.adapters.driven.http.mapper.ICategoryResponseMapper;
 import com.bootcamppragma.microserviciostock.domain.api.ICategoryServicePort;
 
+import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,12 +23,14 @@ public class CategoryRestControllerAdapter {
 
     private final ICategoryResponseMapper categoryResponseMapper;
 
+    @Operation(summary = "create category")
     @PostMapping
     public ResponseEntity<Void> addCategory(@RequestBody AddCategoryRequest request) {
         categoryServicePort.saveCategory(categoryRequestMapper.addRequestToCategory(request));
         return ResponseEntity.status(HttpStatus.CREATED).build();
     }
 
+    @Operation(summary = "Search category by name")
     @GetMapping("/{categoryName}")
     public ResponseEntity<CategoryResponse> getCategory(@PathVariable String categoryName) {
         return ResponseEntity.ok(categoryResponseMapper.toCategoryResponse(categoryServicePort.getCategory(categoryName)));
