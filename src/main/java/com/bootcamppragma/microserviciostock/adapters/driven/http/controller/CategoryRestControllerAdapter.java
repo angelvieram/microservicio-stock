@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/categorias")
 @RequiredArgsConstructor
@@ -24,7 +26,7 @@ public class CategoryRestControllerAdapter {
     private final ICategoryResponseMapper categoryResponseMapper;
 
     @Operation(summary = "create category")
-    @PostMapping
+    @PostMapping("/")
     public ResponseEntity<Void> addCategory(@RequestBody AddCategoryRequest request) {
         categoryServicePort.saveCategory(categoryRequestMapper.addRequestToCategory(request));
         return ResponseEntity.status(HttpStatus.CREATED).build();
@@ -35,4 +37,13 @@ public class CategoryRestControllerAdapter {
     public ResponseEntity<CategoryResponse> getCategory(@PathVariable String categoryName) {
         return ResponseEntity.ok(categoryResponseMapper.toCategoryResponse(categoryServicePort.getCategory(categoryName)));
     }
+
+    @GetMapping("/")
+    public ResponseEntity<List<CategoryResponse>> getAllCategories(@RequestParam Integer page,
+                                                                   @RequestParam Integer size,
+                                                                   @RequestParam(required = false, defaultValue = "asc") String sortOrder) {
+        return ResponseEntity.ok(categoryResponseMapper.
+                toCategoryResponseList(categoryServicePort.getAllCategories(page, size, sortOrder)));
+    }
+
 }
