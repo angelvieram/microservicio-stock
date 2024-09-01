@@ -38,6 +38,7 @@ public class CategoryRestControllerAdapter {
         return ResponseEntity.ok(categoryResponseMapper.toCategoryResponse(categoryServicePort.getCategory(categoryName)));
     }
 
+    //hu2
     @GetMapping("/")
     public ResponseEntity<List<CategoryResponse>> getAllCategories(@RequestParam Integer page,
                                                                    @RequestParam Integer size,

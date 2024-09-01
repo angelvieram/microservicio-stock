@@ -17,6 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.times;
@@ -38,6 +40,7 @@ class CategoryRestControllerAdapterTest {
     @MockBean
     private ICategoryResponseMapper categoryResponseMapper;
 
+    //hu1
     @Test
     @DisplayName("POST /api/categorias should create a category and return status 201")
     void addCategory() throws Exception {
@@ -49,7 +52,7 @@ class CategoryRestControllerAdapterTest {
                 .thenReturn(new Category(1L, "Electronics", "Devices and gadgets"));
 
         // WHEN
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/categorias")
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/categorias/")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(asJsonString(request)))
                 .andExpect(MockMvcResultMatchers.status().isCreated());
@@ -57,6 +60,7 @@ class CategoryRestControllerAdapterTest {
         // THEN
         verify(categoryServicePort, times(1)).saveCategory(any(Category.class));
     }
+
 
     @Test
     @DisplayName("GET /api/categorias/{categoryName} should return category and status 200")
@@ -84,5 +88,44 @@ class CategoryRestControllerAdapterTest {
         ObjectMapper mapper = new ObjectMapper();
         return mapper.writeValueAsString(obj);
     }
+
+    //hu2
+    @Test
+    @DisplayName("GET /api/categorias/ should return a list of categories with status 200")
+    void getAllCategories() throws Exception {
+        // GIVEN
+        int page = 0;
+        int size = 10;
+        String sortOrder = "asc";
+        List<Category> categories = List.of(
+                new Category(1L, "Electronics", "Devices and gadgets"),
+                new Category(2L, "Books", "Various books")
+        );
+        List<CategoryResponse> categoryResponses = List.of(
+                new CategoryResponse(1L, "Electronics", "Devices and gadgets"),
+                new CategoryResponse(2L, "Books", "Various books")
+        );
+
+        // Mock behavior for service layer
+        when(categoryServicePort.getAllCategories(page, size, sortOrder)).thenReturn(categories);
+        when(categoryResponseMapper.toCategoryResponseList(categories)).thenReturn(categoryResponses);
+
+        // WHEN & THEN
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/categorias/")
+                        .param("page", String.valueOf(page))
+                        .param("size", String.valueOf(size))
+                        .param("sortOrder", sortOrder)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].name").value("Electronics"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].description").value("Devices and gadgets"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].id").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].name").value("Books"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].description").value("Various books"));
+
+        verify(categoryServicePort, times(1)).getAllCategories(page, size, sortOrder);
+    }
+
 }
 
