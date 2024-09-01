@@ -1,21 +1,20 @@
 package com.bootcamppragma.microserviciostock.domain.model;
 
 import com.bootcamppragma.microserviciostock.domain.exception.EmptyFieldException;
-import com.bootcamppragma.microserviciostock.domain.exception.InvalidCategoryLengthException;
+import com.bootcamppragma.microserviciostock.domain.exception.InvalidBrandLengthException;
 import com.bootcamppragma.microserviciostock.domain.util.DomainConstants;
 
 import static java.util.Objects.requireNonNull;
 
-//hu1
-public class Category {
-
+//hu3
+public class Brand {
     private final Long id;
 
     private final String name;
 
     private final String description;
 
-    public Category(Long id, String name, String description) {
+    public Brand(Long id, String name, String description) {
         if (name.trim().isEmpty()){
             throw new EmptyFieldException(DomainConstants.Field.NAME.toString());
         }
@@ -24,12 +23,13 @@ public class Category {
             throw new EmptyFieldException(DomainConstants.Field.DESCRIPTION.toString());
         }
 
-        if (name.length() > DomainConstants.MAX_CATEGORY_NAME_LENGTH){
-            throw new InvalidCategoryLengthException(DomainConstants.Field.NAME.toString());
+        if (name.length() > DomainConstants.MAX_BRAND_NAME_LENGTH){
+            throw new InvalidBrandLengthException(DomainConstants.Field.NAME.toString());
         }
 
-        if (description.length() > DomainConstants.MAX_CATEGORY_DESCRIPTION_LENGTH){
-            throw new InvalidCategoryLengthException(DomainConstants.Field.DESCRIPTION.toString());
+        if (description.length() > DomainConstants.MAX_BRAND_DESCRIPTION_LENGTH){
+            throw new InvalidBrandLengthException(DomainConstants.Field.DESCRIPTION.toString()) {
+            };
         }
 
         this.id = id;

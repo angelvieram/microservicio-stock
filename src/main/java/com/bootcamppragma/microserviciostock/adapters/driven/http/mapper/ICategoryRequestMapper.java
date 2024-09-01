@@ -12,6 +12,4 @@ public interface ICategoryRequestMapper {
 
     @Mapping(target = "id", ignore = true)
     Category addRequestToCategory(AddCategoryRequest addCategoryRequest);
-
-
 }

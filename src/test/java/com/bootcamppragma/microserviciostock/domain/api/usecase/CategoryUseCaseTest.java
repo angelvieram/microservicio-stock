@@ -77,5 +77,6 @@ class CategoryUseCaseTest {
         assertEquals(expectedCategories, actualCategories);
         verify(categoryPersistencePort, times(1)).getAllCategories(page, size, sortOrder);
     }
+    //hu3
 
 }
