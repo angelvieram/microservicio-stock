@@ -35,6 +35,7 @@ public class CategoryAdapter implements ICategoryPersistencePort {
         return categoryEntityMapper.toModel(category);
     }
 
+    //hu2
     @Override
     public List<Category> getAllCategories(Integer page, Integer size, String sortOrder) {
         Pageable pagination = PageRequest.of(page, size, Sort.by("name").ascending());

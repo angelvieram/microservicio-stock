@@ -29,7 +29,4 @@ public class BrandAdapter implements IBrandPersistencePort {
         BrandEntity brand = brandRepository.findByNameContaining(name).orElseThrow(ElementNotFoundException::new);
         return brandEntityMapper.toModel(brand);
     }
-
-
-
 }
