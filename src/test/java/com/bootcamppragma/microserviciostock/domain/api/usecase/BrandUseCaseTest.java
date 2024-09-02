@@ -9,6 +9,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.times;
@@ -52,5 +54,24 @@ class BrandUseCaseTest {
         assertNotNull(actualBrand);
         assertEquals(expectedBrand, actualBrand);
         verify(brandPersistencePort, times(1)).getBrand(brandName);
+    }
+
+    //hu4
+    @Test
+    @DisplayName("Should return a list of brands when brands are retrieved from persistence port")
+    void testGetAllBrands() {
+        // Arrange
+        List<Brand> expectedBrands = List.of(
+                new Brand(1L, "Brand1", "Description1"),
+                new Brand(2L, "Brand2", "Description2")
+        );
+
+        when(brandPersistencePort.getAllBrands(0, 10, "asc")).thenReturn(expectedBrands);
+
+        // Act
+        List<Brand> result = brandUseCase.getAllBrands(0, 10, "asc");
+
+        // Assert
+        assertEquals(expectedBrands, result);
     }
 }

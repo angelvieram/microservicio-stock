@@ -3,6 +3,7 @@ package com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.adapter;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.entity.BrandEntity;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.BrandAlreadyExistsException;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.ElementNotFoundException;
+import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.NoDataFoundException;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.mapper.IBrandEntityMapper;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.repository.IBrandRepository;
 import com.bootcamppragma.microserviciostock.domain.model.Brand;
@@ -12,7 +13,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
+import org.springframework.data.domain.*;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -89,5 +92,71 @@ class BrandAdapterTest {
 
         // WHEN & THEN
         assertThrows(ElementNotFoundException.class, () -> brandAdapter.getBrand(name));
+    }
+
+    //hu4
+    @Test
+    @DisplayName("Should return a list of brands when brands are found")
+    void testGetAllBrandsWhenBrandsAreFound() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("name").ascending());
+        List<BrandEntity> brandEntities = List.of(
+                new BrandEntity(1L, "Brand1", "Description1"),
+                new BrandEntity(2L, "Brand2", "Description2")
+        );
+        Page<BrandEntity> brandEntityPage = new PageImpl<>(brandEntities, pageable, brandEntities.size());
+
+        List<Brand> brands = List.of(
+                new Brand(1L, "Brand1", "Description1"),
+                new Brand(2L, "Brand2", "Description2")
+        );
+
+        when(brandRepository.findAll(pageable)).thenReturn(brandEntityPage);
+        when(brandEntityMapper.toModelList(brandEntities)).thenReturn(brands);
+
+        // Act
+        List<Brand> result = brandAdapter.getAllBrands(0, 10, "asc");
+
+        // Assert
+        assertEquals(brands, result);
+    }
+
+    @Test
+    @DisplayName("Should throw NoDataFoundException when no brands are found")
+    void testGetAllBrandsWhenNoBrandsAreFound() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("name").ascending());
+        Page<BrandEntity> emptyPage = Page.empty(pageable);
+
+        when(brandRepository.findAll(pageable)).thenReturn(emptyPage);
+
+        // Act & Assert
+        assertThrows(NoDataFoundException.class, () -> brandAdapter.getAllBrands(0, 10, "asc"));
+    }
+
+    @Test
+    @DisplayName("Should return a list of brands sorted in descending order")
+    void testGetAllBrandsSortedDescending() {
+        // Arrange
+        Pageable pageable = PageRequest.of(0, 10, Sort.by("name").descending());
+        List<BrandEntity> brandEntities = List.of(
+                new BrandEntity(1L, "Brand2", "Description2"),
+                new BrandEntity(2L, "Brand1", "Description1")
+        );
+        Page<BrandEntity> brandEntityPage = new PageImpl<>(brandEntities, pageable, brandEntities.size());
+
+        List<Brand> brands = List.of(
+                new Brand(1L, "Brand2", "Description2"),
+                new Brand(2L, "Brand1", "Description1")
+        );
+
+        when(brandRepository.findAll(pageable)).thenReturn(brandEntityPage);
+        when(brandEntityMapper.toModelList(brandEntities)).thenReturn(brands);
+
+        // Act
+        List<Brand> result = brandAdapter.getAllBrands(0, 10, "desc");
+
+        // Assert
+        assertEquals(brands, result);
     }
 }

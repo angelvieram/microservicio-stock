@@ -15,6 +15,9 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 
+import java.util.Arrays;
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
@@ -73,5 +76,35 @@ class BrandRestControllerAdapterTest {
         assertEquals(expectedResponse, response.getBody());
         verify(brandServicePort, times(1)).getBrand(brandName);
         verify(brandResponseMapper, times(1)).toBrandResponse(brand);
+    }
+
+    //hu4
+    @Test
+    @DisplayName("Dadas algunas marcas y parametros debe devolver la lista")
+    void getAllBrands() {
+        // Arrange
+        int page = 0;
+        int size = 10;
+        String sortOrder = "asc";
+
+        Brand brand1 = new Brand(1L, "Brand 1", "Description 1");
+        Brand brand2 = new Brand(2L, "Brand 2", "Description 2");
+        List<Brand> brands = Arrays.asList(brand1, brand2);
+
+        BrandResponse brandResponse1 = new BrandResponse(1L, "Brand 1", "Description 1");
+        BrandResponse brandResponse2 = new BrandResponse(2L, "Brand 2", "Description 2");
+        List<BrandResponse> brandResponses = Arrays.asList(brandResponse1, brandResponse2);
+
+        when(brandServicePort.getAllBrands(page, size, sortOrder)).thenReturn(brands);
+        when(brandResponseMapper.toBrandResponseList(brands)).thenReturn(brandResponses);
+
+        // Act
+        ResponseEntity<List<BrandResponse>> response = brandRestControllerAdapter.getAllBrands(page, size, sortOrder);
+
+        // Assert
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(brandResponses, response.getBody());
+        verify(brandServicePort, times(1)).getAllBrands(page, size, sortOrder);
+        verify(brandResponseMapper, times(1)).toBrandResponseList(brands);
     }
 }

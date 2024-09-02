@@ -11,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 //hu3
 @RestController
 @RequestMapping("/brand")
@@ -34,4 +36,10 @@ public class BrandRestControllerAdapter {
         return ResponseEntity.ok(brandResponseMapper.toBrandResponse(brandServicePort.getBrand(brandName)));
     }
     //hu4
+    @GetMapping("/")
+    public ResponseEntity<List<BrandResponse>> getAllBrands(@RequestParam Integer page,
+                                                            @RequestParam Integer size,
+                                                            @RequestParam(required = false, defaultValue = "asc") String sortOrder) {
+        return ResponseEntity.ok(brandResponseMapper.toBrandResponseList(brandServicePort.getAllBrands(page, size, sortOrder)));
+    }
 }
