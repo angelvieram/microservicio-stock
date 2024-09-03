@@ -3,7 +3,6 @@ package com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.adapter;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.entity.BrandEntity;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.BrandAlreadyExistsException;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.ElementNotFoundException;
-import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.NoDataFoundException;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.mapper.IBrandEntityMapper;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.repository.IBrandRepository;
 import com.bootcamppragma.microserviciostock.domain.model.Brand;
@@ -45,9 +44,8 @@ public class BrandAdapter implements IBrandPersistencePort {
             pagination = PageRequest.of(page, size, Sort.by("name").descending());
         }
         List<BrandEntity> brands = brandRepository.findAll(pagination).getContent();
-        if (brands.isEmpty()) {
-            throw new NoDataFoundException();
-        }
+
+        // En lugar de lanzar una excepción, retornamos una lista vacía
         return brandEntityMapper.toModelList(brands);
     }
 }

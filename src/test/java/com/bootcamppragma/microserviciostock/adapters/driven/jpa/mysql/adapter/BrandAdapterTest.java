@@ -3,7 +3,6 @@ package com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.adapter;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.entity.BrandEntity;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.BrandAlreadyExistsException;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.ElementNotFoundException;
-import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.NoDataFoundException;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.mapper.IBrandEntityMapper;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.repository.IBrandRepository;
 import com.bootcamppragma.microserviciostock.domain.model.Brand;
@@ -119,19 +118,6 @@ class BrandAdapterTest {
 
         // Assert
         assertEquals(brands, result);
-    }
-
-    @Test
-    @DisplayName("Should throw NoDataFoundException when no brands are found")
-    void testGetAllBrandsWhenNoBrandsAreFound() {
-        // Arrange
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("name").ascending());
-        Page<BrandEntity> emptyPage = Page.empty(pageable);
-
-        when(brandRepository.findAll(pageable)).thenReturn(emptyPage);
-
-        // Act & Assert
-        assertThrows(NoDataFoundException.class, () -> brandAdapter.getAllBrands(0, 10, "asc"));
     }
 
     @Test

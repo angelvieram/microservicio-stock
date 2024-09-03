@@ -3,7 +3,6 @@ package com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.adapter;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.entity.CategoryEntity;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.CategoryAlreadyExistsException;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.ElementNotFoundException;
-import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception.NoDataFoundException;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.mapper.ICategoryEntityMapper;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.repository.ICategoryRepository;
 import com.bootcamppragma.microserviciostock.domain.model.Category;
@@ -118,16 +117,5 @@ class CategoryAdapterTest {
 
         // THEN
         assertEquals(2, result.size());
-    }
-
-    @Test
-    @DisplayName("Debería lanzar NoDataFoundException si no se encuentran categorías")
-    void getAllCategories_shouldThrowException_whenNoCategoriesFound() {
-        // GIVEN
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("name").ascending());
-        when(categoryRepository.findAll(pageable)).thenReturn(new PageImpl<>(List.of()));
-
-        // WHEN & THEN
-        assertThrows(NoDataFoundException.class, () -> categoryAdapter.getAllCategories(0, 10, "asc"));
     }
 }

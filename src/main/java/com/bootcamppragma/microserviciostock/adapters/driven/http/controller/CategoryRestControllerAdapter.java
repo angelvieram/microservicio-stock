@@ -39,6 +39,7 @@ public class CategoryRestControllerAdapter {
     }
 
     //hu2
+    @Operation(summary = "Retrieve all categories in the order of the parameters")
     @GetMapping("/")
     public ResponseEntity<List<CategoryResponse>> getAllCategories(@RequestParam Integer page,
                                                                    @RequestParam Integer size,
@@ -46,5 +47,4 @@ public class CategoryRestControllerAdapter {
         return ResponseEntity.ok(categoryResponseMapper.
                 toCategoryResponseList(categoryServicePort.getAllCategories(page, size, sortOrder)));
     }
-
 }

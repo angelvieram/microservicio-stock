@@ -36,6 +36,7 @@ public class BrandRestControllerAdapter {
         return ResponseEntity.ok(brandResponseMapper.toBrandResponse(brandServicePort.getBrand(brandName)));
     }
     //hu4
+    @Operation(summary = "Retrieve all brands in the order of the parameters")
     @GetMapping("/")
     public ResponseEntity<List<BrandResponse>> getAllBrands(@RequestParam Integer page,
                                                             @RequestParam Integer size,
