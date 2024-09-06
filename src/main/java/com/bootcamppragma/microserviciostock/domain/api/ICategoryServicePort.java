@@ -1,9 +1,7 @@
 package com.bootcamppragma.microserviciostock.domain.api;
 
 import com.bootcamppragma.microserviciostock.domain.model.Category;
-
-import java.util.List;
-
+import com.bootcamppragma.microserviciostock.domain.util.Pagination;
 
 public interface ICategoryServicePort {
 
@@ -11,5 +9,5 @@ public interface ICategoryServicePort {
 
     Category getCategory(String name);
 
-    List<Category> getAllCategories(Integer page, Integer size, String sortOrder);
+    Pagination<Category> getAllCategories(Integer page, Integer size, String sortOrder);
 }

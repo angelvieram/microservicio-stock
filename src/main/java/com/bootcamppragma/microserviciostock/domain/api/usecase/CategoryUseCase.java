@@ -3,8 +3,7 @@ package com.bootcamppragma.microserviciostock.domain.api.usecase;
 import com.bootcamppragma.microserviciostock.domain.api.ICategoryServicePort;
 import com.bootcamppragma.microserviciostock.domain.model.Category;
 import com.bootcamppragma.microserviciostock.domain.spi.ICategoryPersistencePort;
-
-import java.util.List;
+import com.bootcamppragma.microserviciostock.domain.util.Pagination;
 
 public class CategoryUseCase implements ICategoryServicePort {
 
@@ -26,7 +25,7 @@ public class CategoryUseCase implements ICategoryServicePort {
 
     //hu2
     @Override
-    public List<Category> getAllCategories(Integer page, Integer size, String sortOrder) {
+    public Pagination<Category> getAllCategories(Integer page, Integer size, String sortOrder) {
         return categoryPersistencePort.getAllCategories(page, size, sortOrder);
     }
 }
