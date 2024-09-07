@@ -5,6 +5,8 @@ import com.bootcamppragma.microserviciostock.adapters.driven.http.dto.response.B
 import com.bootcamppragma.microserviciostock.adapters.driven.http.mapper.IBrandRequestMapper;
 import com.bootcamppragma.microserviciostock.adapters.driven.http.mapper.IBrandResponseMapper;
 import com.bootcamppragma.microserviciostock.domain.api.IBrandServicePort;
+import com.bootcamppragma.microserviciostock.domain.model.Brand;
+import com.bootcamppragma.microserviciostock.domain.util.Pagination;
 import io.swagger.v3.oas.annotations.Operation;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -12,8 +14,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
-//hu3
 @RestController
 @RequestMapping("/brand")
 @RequiredArgsConstructor
@@ -38,9 +40,24 @@ public class BrandRestControllerAdapter {
     //hu4
     @Operation(summary = "Retrieve all brands in the order of the parameters")
     @GetMapping("/")
-    public ResponseEntity<List<BrandResponse>> getAllBrands(@RequestParam Integer page,
-                                                            @RequestParam Integer size,
-                                                            @RequestParam(required = false, defaultValue = "asc") String sortOrder) {
-        return ResponseEntity.ok(brandResponseMapper.toBrandResponseList(brandServicePort.getAllBrands(page, size, sortOrder)));
+    public ResponseEntity<Pagination<BrandResponse>> getAllBrands(
+            @RequestParam (defaultValue = "0") Integer page,
+            @RequestParam (defaultValue = "10") Integer size,
+            @RequestParam (defaultValue = "asc") String sortOrder) {
+
+        Pagination<Brand> brandPage = brandServicePort.getAllBrands(page, size, sortOrder);
+
+        List<BrandResponse> brandResponses = brandPage.getContent().stream()
+                .map(brandResponseMapper::toBrandResponse)
+                .collect(Collectors.toList());
+
+        Pagination<BrandResponse> paginationResponse = new Pagination<>(
+                brandResponses,
+                brandPage.getPageNumber(),
+                brandPage.getPageSize(),
+                brandPage.getTotalElements(),
+                brandPage.getTotalPages()
+        );
+        return ResponseEntity.ok(paginationResponse);
     }
 }

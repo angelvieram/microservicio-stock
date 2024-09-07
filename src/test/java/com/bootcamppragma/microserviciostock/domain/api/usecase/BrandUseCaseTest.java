@@ -2,76 +2,76 @@ package com.bootcamppragma.microserviciostock.domain.api.usecase;
 
 import com.bootcamppragma.microserviciostock.domain.model.Brand;
 import com.bootcamppragma.microserviciostock.domain.spi.IBrandPersistencePort;
+import com.bootcamppragma.microserviciostock.domain.util.Pagination;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
 
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@ExtendWith(MockitoExtension.class)
 class BrandUseCaseTest {
 
-    @Mock
     private IBrandPersistencePort brandPersistencePort;
-
-    @InjectMocks
     private BrandUseCase brandUseCase;
 
-    @Test
-    @DisplayName("Dada una marca debe guardarla correctamente en la bd")
-    void saveBrand() {
-        // GIVEN
-        Brand brand = new Brand(1L, "Sony", "Electronics and gadgets");
+    @BeforeEach
+    void setUp() {
+        brandPersistencePort = Mockito.mock(IBrandPersistencePort.class);
+        brandUseCase = new BrandUseCase(brandPersistencePort);
+    }
 
-        // WHEN
+    @Test
+    @DisplayName("Should save brand successfully when given a valid brand")
+    void givenValidBrand_whenSaveBrand_thenBrandIsSaved() {
+        // Given
+        Brand brand = new Brand(1L, "Nike", "Sports brand");
+
+        // When
         brandUseCase.saveBrand(brand);
 
-        // THEN
-        verify(brandPersistencePort, times(1)).saveBrand(brand);
+        // Then
+        verify(brandPersistencePort).saveBrand(brand);
     }
 
     @Test
-    @DisplayName("Dado el nombre de una marca debe devolver la marca correspondiente")
-    void getBrand() {
-        // GIVEN
-        String brandName = "Sony";
-        Brand expectedBrand = new Brand(1L, brandName, "Electronics and gadgets");
+    @DisplayName("Should return the correct brand when given a brand name")
+    void givenBrandName_whenGetBrand_thenReturnBrand() {
+        // Given
+        String brandName = "Nike";
+        Brand expectedBrand = new Brand(1L, brandName, "Sports brand");
         when(brandPersistencePort.getBrand(brandName)).thenReturn(expectedBrand);
 
-        // WHEN
+        // When
         Brand actualBrand = brandUseCase.getBrand(brandName);
 
-        // THEN
-        assertNotNull(actualBrand);
+        // Then
         assertEquals(expectedBrand, actualBrand);
-        verify(brandPersistencePort, times(1)).getBrand(brandName);
+        verify(brandPersistencePort).getBrand(brandName);
     }
 
-    //hu4
     @Test
-    @DisplayName("Should return a list of brands when brands are retrieved from persistence port")
-    void testGetAllBrands() {
-        // Arrange
-        List<Brand> expectedBrands = List.of(
-                new Brand(1L, "Brand1", "Description1"),
-                new Brand(2L, "Brand2", "Description2")
-        );
+    @DisplayName("Should return paginated brands when pagination parameters are provided")
+    void givenPaginationParams_whenGetAllBrands_thenReturnPaginatedBrands() {
+        // Given
+        Integer page = 0;
+        Integer size = 10;
+        String sortOrder = "asc";
+        Pagination<Brand> expectedPagination = new Pagination<>(
+                List.of(new Brand(1L, "Nike", "Sports brand")),
+                page, size, 1L, 1);
 
-        when(brandPersistencePort.getAllBrands(0, 10, "asc")).thenReturn(expectedBrands);
+        when(brandPersistencePort.getAllBrands(page, size, sortOrder)).thenReturn(expectedPagination);
 
-        // Act
-        List<Brand> result = brandUseCase.getAllBrands(0, 10, "asc");
+        // When
+        Pagination<Brand> actualPagination = brandUseCase.getAllBrands(page, size, sortOrder);
 
-        // Assert
-        assertEquals(expectedBrands, result);
+        // Then
+        assertEquals(expectedPagination, actualPagination);
+        verify(brandPersistencePort).getAllBrands(page, size, sortOrder);
     }
 }

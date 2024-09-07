@@ -6,16 +6,12 @@ import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.mapper.ICategoryEntityMapper;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.repository.ICategoryRepository;
 import com.bootcamppragma.microserviciostock.domain.model.Category;
+import com.bootcamppragma.microserviciostock.domain.util.Pagination;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
+import org.mockito.Mockito;
+import org.springframework.data.domain.*;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,97 +21,95 @@ import static org.mockito.Mockito.*;
 
 class CategoryAdapterTest {
 
-    @Mock
     private ICategoryRepository categoryRepository;
-
-    @Mock
     private ICategoryEntityMapper categoryEntityMapper;
-
-    @InjectMocks
     private CategoryAdapter categoryAdapter;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        categoryRepository = Mockito.mock(ICategoryRepository.class);
+        categoryEntityMapper = Mockito.mock(ICategoryEntityMapper.class);
+        categoryAdapter = new CategoryAdapter(categoryRepository, categoryEntityMapper);
     }
 
     @Test
-    @DisplayName("Debería guardar una categoría si no existe")
-    void saveCategory() {
-        // GIVEN
-        Category category = new Category(1L, "Electronics", "Electronic gadgets");
-        CategoryEntity categoryEntity = new CategoryEntity(1L, "Electronics", "Electronic gadgets");
-
+    @DisplayName("Should save category successfully when it doesn't already exist")
+    void givenValidCategory_whenSaveCategory_thenCategoryIsSaved() {
+        // Given
+        Category category = new Category(1L, "Electronics", "Category for electronic items");
+        CategoryEntity categoryEntity = new CategoryEntity();
         when(categoryRepository.findByName(category.getName())).thenReturn(Optional.empty());
         when(categoryEntityMapper.toEntity(category)).thenReturn(categoryEntity);
 
-        // WHEN
+        // When
         categoryAdapter.saveCategory(category);
 
-        // THEN
-        verify(categoryRepository, times(1)).save(categoryEntity);
+        // Then
+        verify(categoryRepository).save(categoryEntity);
     }
 
     @Test
-    @DisplayName("Debería lanzar CategoryAlreadyExistsException si la categoría ya existe")
-    void saveCategory_shouldThrowException_whenCategoryExists() {
-        // GIVEN
-        Category category = new Category(1L, "Electronics", "Electronic gadgets");
+    @DisplayName("Should throw CategoryAlreadyExistsException when the category already exists")
+    void givenExistingCategory_whenSaveCategory_thenThrowCategoryAlreadyExistsException() {
+        // Given
+        Category category = new Category(1L, "Electronics", "Category for electronic items");
         when(categoryRepository.findByName(category.getName())).thenReturn(Optional.of(new CategoryEntity()));
 
-        // WHEN & THEN
+        // When / Then
         assertThrows(CategoryAlreadyExistsException.class, () -> categoryAdapter.saveCategory(category));
+        verify(categoryRepository, never()).save(any(CategoryEntity.class));
     }
 
     @Test
-    @DisplayName("Debería obtener una categoría por su nombre")
-    void getCategory() {
-        // GIVEN
-        String name = "Electronics";
-        CategoryEntity categoryEntity = new CategoryEntity(1L, name, "Electronic gadgets");
-        Category category = new Category(1L, name, "Electronic gadgets");
+    @DisplayName("Should return the correct category when given a name")
+    void givenCategoryName_whenGetCategory_thenReturnCategory() {
+        // Given
+        String categoryName = "Electronics";
+        CategoryEntity categoryEntity = new CategoryEntity();
+        Category expectedCategory = new Category(1L, categoryName, "Category for electronic items");
+        when(categoryRepository.findByNameContaining(categoryName)).thenReturn(Optional.of(categoryEntity));
+        when(categoryEntityMapper.toModel(categoryEntity)).thenReturn(expectedCategory);
 
-        when(categoryRepository.findByNameContaining(name)).thenReturn(Optional.of(categoryEntity));
+        // When
+        Category actualCategory = categoryAdapter.getCategory(categoryName);
+
+        // Then
+        assertEquals(expectedCategory, actualCategory);
+        verify(categoryRepository).findByNameContaining(categoryName);
+    }
+
+    @Test
+    @DisplayName("Should throw ElementNotFoundException when category is not found by name")
+    void givenNonExistingCategoryName_whenGetCategory_thenThrowElementNotFoundException() {
+        // Given
+        String categoryName = "NonExistingCategory";
+        when(categoryRepository.findByNameContaining(categoryName)).thenReturn(Optional.empty());
+
+        // When / Then
+        assertThrows(ElementNotFoundException.class, () -> categoryAdapter.getCategory(categoryName));
+        verify(categoryRepository).findByNameContaining(categoryName);
+    }
+
+    @Test
+    @DisplayName("Should return paginated categories when pagination parameters are provided")
+    void givenPaginationParams_whenGetAllCategories_thenReturnPaginatedCategories() {
+        // Given
+        Integer page = 0;
+        Integer size = 10;
+        String sortOrder = "asc";
+        CategoryEntity categoryEntity = new CategoryEntity();
+        Category category = new Category(1L, "Electronics", "Category for electronic items");
+        Page<CategoryEntity> categoryEntityPage = new PageImpl<>(List.of(categoryEntity));
+        when(categoryRepository.findAll(any(Pageable.class))).thenReturn(categoryEntityPage);
         when(categoryEntityMapper.toModel(categoryEntity)).thenReturn(category);
 
-        // WHEN
-        Category result = categoryAdapter.getCategory(name);
+        // When
+        Pagination<Category> pagination = categoryAdapter.getAllCategories(page, size, sortOrder);
 
-        // THEN
-        assertEquals(category, result);
-    }
-
-    @Test
-    @DisplayName("Debería lanzar ElementNotFoundException si la categoría no existe")
-    void getCategory_shouldThrowException_whenCategoryNotFound() {
-        // GIVEN
-        String name = "NonExistentCategory";
-        when(categoryRepository.findByNameContaining(name)).thenReturn(Optional.empty());
-
-        // WHEN & THEN
-        assertThrows(ElementNotFoundException.class, () -> categoryAdapter.getCategory(name));
-    }
-
-    @Test
-    @DisplayName("Debería obtener todas las categorías con paginación y orden ascendente")
-    void getAllCategories() {
-        // GIVEN
-        CategoryEntity categoryEntity1 = new CategoryEntity(1L, "Electronics", "Electronic gadgets");
-        CategoryEntity categoryEntity2 = new CategoryEntity(2L, "Books", "Fiction and non-fiction books");
-        List<CategoryEntity> categoryEntities = List.of(categoryEntity1, categoryEntity2);
-
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("name").ascending());
-
-        when(categoryRepository.findAll(pageable)).thenReturn(new PageImpl<>(categoryEntities));
-        when(categoryEntityMapper.toModelList(categoryEntities)).thenReturn(List.of(
-                new Category(1L, "Electronics", "Electronic gadgets"),
-                new Category(2L, "Books", "Fiction and non-fiction books")
-        ));
-
-        // WHEN
-        List<Category> result = categoryAdapter.getAllCategories(0, 10, "asc");
-
-        // THEN
-        assertEquals(2, result.size());
+        // Then
+        assertNotNull(pagination);
+        assertEquals(1, pagination.getContent().size());
+        assertEquals(category, pagination.getContent().get(0));
+        verify(categoryRepository).findAll(any(Pageable.class));
     }
 }

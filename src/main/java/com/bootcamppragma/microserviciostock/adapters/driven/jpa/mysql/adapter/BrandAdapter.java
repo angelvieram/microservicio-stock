@@ -8,12 +8,15 @@ import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.repositor
 import com.bootcamppragma.microserviciostock.domain.model.Brand;
 import com.bootcamppragma.microserviciostock.domain.spi.IBrandPersistencePort;
 
+import com.bootcamppragma.microserviciostock.domain.util.Pagination;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 //hu3
 @RequiredArgsConstructor
@@ -37,15 +40,21 @@ public class BrandAdapter implements IBrandPersistencePort {
 
     //hu4
     @Override
-    public List<Brand> getAllBrands(Integer page, Integer size, String sortOrder) {
-        Pageable pagination = PageRequest.of(page, size, Sort.by("name").ascending());
+    public Pagination<Brand> getAllBrands(Integer page, Integer size, String sortOrder) {
+        Sort sort = Sort.by(Sort.Direction.fromString(sortOrder), "name");
+        Pageable pageable = PageRequest.of(page, size, sort);
+        Page<BrandEntity> brandPage = brandRepository.findAll(pageable);
 
-        if ("desc".equals(sortOrder)) {
-            pagination = PageRequest.of(page, size, Sort.by("name").descending());
-        }
-        List<BrandEntity> brands = brandRepository.findAll(pagination).getContent();
+        List<Brand> brands = brandPage.getContent().stream()
+                .map(brandEntityMapper::toModel)
+                .collect(Collectors.toList());
 
-        // En lugar de lanzar una excepción, retornamos una lista vacía
-        return brandEntityMapper.toModelList(brands);
+        return new Pagination<>(
+                brands,
+                brandPage.getNumber(),
+                brandPage.getSize(),
+                brandPage.getTotalElements(),
+                brandPage.getTotalPages()
+        );
     }
 }

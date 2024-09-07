@@ -1,82 +1,76 @@
 package com.bootcamppragma.microserviciostock.domain.api.usecase;
-
 import com.bootcamppragma.microserviciostock.domain.model.Category;
 import com.bootcamppragma.microserviciostock.domain.spi.ICategoryPersistencePort;
+import com.bootcamppragma.microserviciostock.domain.util.Pagination;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.Mockito;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class CategoryUseCaseTest {
 
-    @ExtendWith(MockitoExtension.class)
-    @Mock
     private ICategoryPersistencePort categoryPersistencePort;
-
-    @InjectMocks
     private CategoryUseCase categoryUseCase;
 
-    @Test
-    @DisplayName("Dada una categoria debe guardarla correctamente en la bd")
-    void saveCategory() {
-        //GIVEN
-        Category category = new Category(1L,"Electronics", "Devices and gadgets");
+    @BeforeEach
+    void setUp() {
+        categoryPersistencePort = Mockito.mock(ICategoryPersistencePort.class);
+        categoryUseCase = new CategoryUseCase(categoryPersistencePort);
+    }
 
-        //WHEN
+    @Test
+    @DisplayName("Should save category successfully when given a valid category")
+    void givenValidCategory_whenSaveCategory_thenCategoryIsSaved() {
+        // Given
+        Category category = new Category(1L, "Electronics", "Category for electronic items");
+
+        // When
         categoryUseCase.saveCategory(category);
 
-        //THEN
-        verify(categoryPersistencePort, times(1)).saveCategory(category);
-
+        // Then
+        verify(categoryPersistencePort).saveCategory(category);
     }
 
-    //hu1
     @Test
-    @DisplayName("Given a valid category name, when retrieving the category, then it should return the correct category")
-    void getCategory() {
-
+    @DisplayName("Should return the correct category when given a category name")
+    void givenCategoryName_whenGetCategory_thenReturnCategory() {
+        // Given
         String categoryName = "Electronics";
-        Category expectedCategory = new Category(1L,categoryName, "Devices and gadgets");
+        Category expectedCategory = new Category(1L, categoryName, "Category for electronic items");
         when(categoryPersistencePort.getCategory(categoryName)).thenReturn(expectedCategory);
 
+        // When
         Category actualCategory = categoryUseCase.getCategory(categoryName);
 
-        assertNotNull(actualCategory);
+        // Then
         assertEquals(expectedCategory, actualCategory);
-        verify(categoryPersistencePort, times(1)).getCategory(categoryName);
-
+        verify(categoryPersistencePort).getCategory(categoryName);
     }
 
-    //hu2
     @Test
-    @DisplayName("Dado parámetros válidos, debe retornar una lista de categorías")
-    void getAllCategories() {
-        // GIVEN
-        int page = 0;
-        int size = 10;
+    @DisplayName("Should return paginated categories when pagination parameters are provided")
+    void givenPaginationParams_whenGetAllCategories_thenReturnPaginatedCategories() {
+        // Given
+        Integer page = 0;
+        Integer size = 10;
         String sortOrder = "asc";
-        List<Category> expectedCategories = List.of(
-                new Category(1L, "Electronics", "Devices and gadgets"),
-                new Category(2L, "Books", "Various books")
-        );
+        Pagination<Category> expectedPagination = new Pagination<>(
+                List.of(new Category(1L, "Electronics", "Category for electronic items")),
+                page, size, 1L, 1);
 
-        when(categoryPersistencePort.getAllCategories(page, size, sortOrder)).thenReturn(expectedCategories);
+        when(categoryPersistencePort.getAllCategories(page, size, sortOrder)).thenReturn(expectedPagination);
 
-        // WHEN
-        List<Category> actualCategories = categoryUseCase.getAllCategories(page, size, sortOrder);
+        // When
+        Pagination<Category> actualPagination = categoryUseCase.getAllCategories(page, size, sortOrder);
 
-        // THEN
-        assertNotNull(actualCategories);
-        assertEquals(expectedCategories, actualCategories);
-        verify(categoryPersistencePort, times(1)).getAllCategories(page, size, sortOrder);
+        // Then
+        assertEquals(expectedPagination, actualPagination);
+        verify(categoryPersistencePort).getAllCategories(page, size, sortOrder);
     }
-    //hu3
-
 }

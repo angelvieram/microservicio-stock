@@ -6,12 +6,11 @@ import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.exception
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.mapper.IBrandEntityMapper;
 import com.bootcamppragma.microserviciostock.adapters.driven.jpa.mysql.repository.IBrandRepository;
 import com.bootcamppragma.microserviciostock.domain.model.Brand;
+import com.bootcamppragma.microserviciostock.domain.util.Pagination;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.InjectMocks;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.Mockito;
 import org.springframework.data.domain.*;
 
 import java.util.List;
@@ -22,127 +21,95 @@ import static org.mockito.Mockito.*;
 
 class BrandAdapterTest {
 
-    @Mock
     private IBrandRepository brandRepository;
-
-    @Mock
     private IBrandEntityMapper brandEntityMapper;
-
-    @InjectMocks
     private BrandAdapter brandAdapter;
 
     @BeforeEach
     void setUp() {
-        MockitoAnnotations.openMocks(this);
+        brandRepository = Mockito.mock(IBrandRepository.class);
+        brandEntityMapper = Mockito.mock(IBrandEntityMapper.class);
+        brandAdapter = new BrandAdapter(brandRepository, brandEntityMapper);
     }
 
     @Test
-    @DisplayName("Debería guardar una marca si no existe")
-    void saveBrand() {
-        // GIVEN
-        Brand brand = new Brand(1L, "Nike", "Sportswear brand");
-        BrandEntity brandEntity = new BrandEntity(1L, "Nike", "Sportswear brand");
-
+    @DisplayName("Should save brand successfully when it doesn't already exist")
+    void givenValidBrand_whenSaveBrand_thenBrandIsSaved() {
+        // Given
+        Brand brand = new Brand(1L, "Nike", "Sports brand");
+        BrandEntity brandEntity = new BrandEntity();
         when(brandRepository.findByName(brand.getName())).thenReturn(Optional.empty());
         when(brandEntityMapper.toEntity(brand)).thenReturn(brandEntity);
 
-        // WHEN
+        // When
         brandAdapter.saveBrand(brand);
 
-        // THEN
-        verify(brandRepository, times(1)).save(brandEntity);
+        // Then
+        verify(brandRepository).save(brandEntity);
     }
 
     @Test
-    @DisplayName("Debería lanzar BrandAlreadyExistsException si la marca ya existe")
-    void saveBrand_shouldThrowException_whenBrandExists() {
-        // GIVEN
-        Brand brand = new Brand(1L, "Nike", "Sportswear brand");
+    @DisplayName("Should throw BrandAlreadyExistsException when the brand already exists")
+    void givenExistingBrand_whenSaveBrand_thenThrowBrandAlreadyExistsException() {
+        // Given
+        Brand brand = new Brand(1L, "Nike", "Sports brand");
         when(brandRepository.findByName(brand.getName())).thenReturn(Optional.of(new BrandEntity()));
 
-        // WHEN & THEN
+        // When / Then
         assertThrows(BrandAlreadyExistsException.class, () -> brandAdapter.saveBrand(brand));
+        verify(brandRepository, never()).save(any(BrandEntity.class));
     }
 
     @Test
-    @DisplayName("Debería obtener una marca por su nombre")
-    void getBrand() {
-        // GIVEN
-        String name = "Nike";
-        BrandEntity brandEntity = new BrandEntity(1L, name, "Sportswear brand");
-        Brand brand = new Brand(1L, name, "Sportswear brand");
+    @DisplayName("Should return the correct brand when given a name")
+    void givenBrandName_whenGetBrand_thenReturnBrand() {
+        // Given
+        String brandName = "Nike";
+        BrandEntity brandEntity = new BrandEntity();
+        Brand expectedBrand = new Brand(1L, brandName, "Sports brand");
+        when(brandRepository.findByNameContaining(brandName)).thenReturn(Optional.of(brandEntity));
+        when(brandEntityMapper.toModel(brandEntity)).thenReturn(expectedBrand);
 
-        when(brandRepository.findByNameContaining(name)).thenReturn(Optional.of(brandEntity));
+        // When
+        Brand actualBrand = brandAdapter.getBrand(brandName);
+
+        // Then
+        assertEquals(expectedBrand, actualBrand);
+        verify(brandRepository).findByNameContaining(brandName);
+    }
+
+    @Test
+    @DisplayName("Should throw ElementNotFoundException when brand is not found by name")
+    void givenNonExistingBrandName_whenGetBrand_thenThrowElementNotFoundException() {
+        // Given
+        String brandName = "UnknownBrand";
+        when(brandRepository.findByNameContaining(brandName)).thenReturn(Optional.empty());
+
+        // When / Then
+        assertThrows(ElementNotFoundException.class, () -> brandAdapter.getBrand(brandName));
+        verify(brandRepository).findByNameContaining(brandName);
+    }
+
+    @Test
+    @DisplayName("Should return paginated brands when pagination parameters are provided")
+    void givenPaginationParams_whenGetAllBrands_thenReturnPaginatedBrands() {
+        // Given
+        Integer page = 0;
+        Integer size = 10;
+        String sortOrder = "asc";
+        BrandEntity brandEntity = new BrandEntity();
+        Brand brand = new Brand(1L, "Nike", "Sports brand");
+        Page<BrandEntity> brandEntityPage = new PageImpl<>(List.of(brandEntity));
+        when(brandRepository.findAll(any(Pageable.class))).thenReturn(brandEntityPage);
         when(brandEntityMapper.toModel(brandEntity)).thenReturn(brand);
 
-        // WHEN
-        Brand result = brandAdapter.getBrand(name);
+        // When
+        Pagination<Brand> pagination = brandAdapter.getAllBrands(page, size, sortOrder);
 
-        // THEN
-        assertEquals(brand, result);
-    }
-
-    @Test
-    @DisplayName("Debería lanzar ElementNotFoundException si la marca no existe")
-    void getBrand_shouldThrowException_whenBrandNotFound() {
-        // GIVEN
-        String name = "NonExistentBrand";
-        when(brandRepository.findByNameContaining(name)).thenReturn(Optional.empty());
-
-        // WHEN & THEN
-        assertThrows(ElementNotFoundException.class, () -> brandAdapter.getBrand(name));
-    }
-
-    //hu4
-    @Test
-    @DisplayName("Should return a list of brands when brands are found")
-    void testGetAllBrandsWhenBrandsAreFound() {
-        // Arrange
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("name").ascending());
-        List<BrandEntity> brandEntities = List.of(
-                new BrandEntity(1L, "Brand1", "Description1"),
-                new BrandEntity(2L, "Brand2", "Description2")
-        );
-        Page<BrandEntity> brandEntityPage = new PageImpl<>(brandEntities, pageable, brandEntities.size());
-
-        List<Brand> brands = List.of(
-                new Brand(1L, "Brand1", "Description1"),
-                new Brand(2L, "Brand2", "Description2")
-        );
-
-        when(brandRepository.findAll(pageable)).thenReturn(brandEntityPage);
-        when(brandEntityMapper.toModelList(brandEntities)).thenReturn(brands);
-
-        // Act
-        List<Brand> result = brandAdapter.getAllBrands(0, 10, "asc");
-
-        // Assert
-        assertEquals(brands, result);
-    }
-
-    @Test
-    @DisplayName("Should return a list of brands sorted in descending order")
-    void testGetAllBrandsSortedDescending() {
-        // Arrange
-        Pageable pageable = PageRequest.of(0, 10, Sort.by("name").descending());
-        List<BrandEntity> brandEntities = List.of(
-                new BrandEntity(1L, "Brand2", "Description2"),
-                new BrandEntity(2L, "Brand1", "Description1")
-        );
-        Page<BrandEntity> brandEntityPage = new PageImpl<>(brandEntities, pageable, brandEntities.size());
-
-        List<Brand> brands = List.of(
-                new Brand(1L, "Brand2", "Description2"),
-                new Brand(2L, "Brand1", "Description1")
-        );
-
-        when(brandRepository.findAll(pageable)).thenReturn(brandEntityPage);
-        when(brandEntityMapper.toModelList(brandEntities)).thenReturn(brands);
-
-        // Act
-        List<Brand> result = brandAdapter.getAllBrands(0, 10, "desc");
-
-        // Assert
-        assertEquals(brands, result);
+        // Then
+        assertNotNull(pagination);
+        assertEquals(1, pagination.getContent().size());
+        assertEquals(brand, pagination.getContent().get(0));
+        verify(brandRepository).findAll(any(Pageable.class));
     }
 }

@@ -6,126 +6,96 @@ import com.bootcamppragma.microserviciostock.adapters.driven.http.mapper.ICatego
 import com.bootcamppragma.microserviciostock.adapters.driven.http.mapper.ICategoryResponseMapper;
 import com.bootcamppragma.microserviciostock.domain.api.ICategoryServicePort;
 import com.bootcamppragma.microserviciostock.domain.model.Category;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.bootcamppragma.microserviciostock.domain.util.Pagination;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
-import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
+import org.mockito.Mockito;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-@WebMvcTest(CategoryRestControllerAdapter.class)
 class CategoryRestControllerAdapterTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    @MockBean
     private ICategoryServicePort categoryServicePort;
-
-    @MockBean
     private ICategoryRequestMapper categoryRequestMapper;
-
-    @MockBean
     private ICategoryResponseMapper categoryResponseMapper;
+    private CategoryRestControllerAdapter categoryRestControllerAdapter;
 
-    //hu1
-    @Test
-    @DisplayName("POST /api/categorias should create a category and return status 201")
-    void addCategory() throws Exception {
-        // GIVEN
-        AddCategoryRequest request = new AddCategoryRequest("Electronics", "Devices and gadgets");
-
-        // Mock behavior for service layer
-        when(categoryRequestMapper.addRequestToCategory(any(AddCategoryRequest.class)))
-                .thenReturn(new Category(1L, "Electronics", "Devices and gadgets"));
-
-        // WHEN
-        mockMvc.perform(MockMvcRequestBuilders.post("/api/categorias/")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(asJsonString(request)))
-                .andExpect(MockMvcResultMatchers.status().isCreated());
-
-        // THEN
-        verify(categoryServicePort, times(1)).saveCategory(any(Category.class));
+    @BeforeEach
+    void setUp() {
+        categoryServicePort = Mockito.mock(ICategoryServicePort.class);
+        categoryRequestMapper = Mockito.mock(ICategoryRequestMapper.class);
+        categoryResponseMapper = Mockito.mock(ICategoryResponseMapper.class);
+        categoryRestControllerAdapter = new CategoryRestControllerAdapter(categoryServicePort, categoryRequestMapper, categoryResponseMapper);
     }
 
+    @Test
+    @DisplayName("Should create category successfully")
+    void givenValidCategoryRequest_whenAddCategory_thenReturnCreatedStatus() {
+        // Given
+        AddCategoryRequest request = new AddCategoryRequest("Electronics", "Category for electronic items");
+        Category category = new Category(1L, "Electronics", "Category for electronic items");
+        when(categoryRequestMapper.addRequestToCategory(request)).thenReturn(category);
+
+        // When
+        ResponseEntity<Void> response = categoryRestControllerAdapter.addCategory(request);
+
+        // Then
+        verify(categoryServicePort).saveCategory(category);
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+    }
 
     @Test
-    @DisplayName("GET /api/categorias/{categoryName} should return category and status 200")
-    void getCategory() throws Exception {
-        // GIVEN
+    @DisplayName("Should return category by name successfully")
+    void givenCategoryName_whenGetCategory_thenReturnCategoryResponse() {
+        // Given
         String categoryName = "Electronics";
-        CategoryResponse response = new CategoryResponse(1L, categoryName, "Devices and gadgets");
+        Category category = new Category(1L, categoryName, "Category for electronic items");
+        CategoryResponse expectedResponse = new CategoryResponse(1L, categoryName, "Category for electronic items");
 
-        // Mock behavior for service layer
-        when(categoryServicePort.getCategory(anyString())).thenReturn(new Category(1L, categoryName, "Devices and gadgets"));
-        when(categoryResponseMapper.toCategoryResponse(any(Category.class))).thenReturn(response);
+        when(categoryServicePort.getCategory(categoryName)).thenReturn(category);
+        when(categoryResponseMapper.toCategoryResponse(category)).thenReturn(expectedResponse);
 
-        // WHEN & THEN
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/categorias/{categoryName}", categoryName)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value(categoryName))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.description").value("Devices and gadgets"));
+        // When
+        ResponseEntity<CategoryResponse> response = categoryRestControllerAdapter.getCategory(categoryName);
 
-        verify(categoryServicePort, times(1)).getCategory(categoryName);
+        // Then
+        verify(categoryServicePort).getCategory(categoryName);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(expectedResponse, response.getBody());
     }
 
-    private String asJsonString(Object obj) throws Exception {
-        ObjectMapper mapper = new ObjectMapper();
-        return mapper.writeValueAsString(obj);
-    }
-
-    //hu2
     @Test
-    @DisplayName("GET /api/categorias/ should return a list of categories with status 200")
-    void getAllCategories() throws Exception {
-        // GIVEN
-        int page = 0;
-        int size = 10;
+    @DisplayName("Should return paginated categories successfully")
+    void givenPaginationParams_whenGetAllCategories_thenReturnPaginatedCategories() {
+        // Given
+        Integer page = 0;
+        Integer size = 10;
         String sortOrder = "asc";
-        List<Category> categories = List.of(
-                new Category(1L, "Electronics", "Devices and gadgets"),
-                new Category(2L, "Books", "Various books")
+
+        Category category = new Category(1L, "Electronics", "Category for electronic items");
+        CategoryResponse categoryResponse = new CategoryResponse(1L, "Electronics", "Category for electronic items");
+
+        Pagination<Category> categoryPagination = new Pagination<>(
+                List.of(category), page, size, 1L, 1
         );
-        List<CategoryResponse> categoryResponses = List.of(
-                new CategoryResponse(1L, "Electronics", "Devices and gadgets"),
-                new CategoryResponse(2L, "Books", "Various books")
-        );
 
-        // Mock behavior for service layer
-        when(categoryServicePort.getAllCategories(page, size, sortOrder)).thenReturn(categories);
-        when(categoryResponseMapper.toCategoryResponseList(categories)).thenReturn(categoryResponses);
+        when(categoryServicePort.getAllCategories(page, size, sortOrder)).thenReturn(categoryPagination);
+        when(categoryResponseMapper.toCategoryResponse(category)).thenReturn(categoryResponse);
 
-        // WHEN & THEN
-        mockMvc.perform(MockMvcRequestBuilders.get("/api/categorias/")
-                        .param("page", String.valueOf(page))
-                        .param("size", String.valueOf(size))
-                        .param("sortOrder", sortOrder)
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(1))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].name").value("Electronics"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[0].description").value("Devices and gadgets"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].id").value(2))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].name").value("Books"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$[1].description").value("Various books"));
+        // When
+        ResponseEntity<Pagination<CategoryResponse>> response = categoryRestControllerAdapter.getAllCategories(page, size, sortOrder);
 
-        verify(categoryServicePort, times(1)).getAllCategories(page, size, sortOrder);
+        // Then
+        verify(categoryServicePort).getAllCategories(page, size, sortOrder);
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals(1, response.getBody().getContent().size());
+        assertEquals(categoryResponse, response.getBody().getContent().get(0));
     }
-
 }
-

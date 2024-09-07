@@ -10,7 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class BrandTest {
 
     @Test
-    @DisplayName("Dada una marca válida, se debe crear correctamente")
+    @DisplayName("Given a valid brand, it should be created correctly")
     void createBrandSuccessfully() {
         // GIVEN
         Long id = 1L;
@@ -27,7 +27,7 @@ class BrandTest {
     }
 
     @Test
-    @DisplayName("Cuando el nombre de la marca está vacío, debería lanzar EmptyFieldException")
+    @DisplayName("When the brand name is empty, it should throw EmptyFieldException")
     void createBrandWithEmptyNameThrowsException() {
         // GIVEN
         String name = "";
@@ -42,7 +42,7 @@ class BrandTest {
     }
 
     @Test
-    @DisplayName("Cuando la descripción de la marca está vacía, debería lanzar EmptyFieldException")
+    @DisplayName("When the brand description is empty, it should throw EmptyFieldException")
     void createBrandWithEmptyDescriptionThrowsException() {
         // GIVEN
         String name = "Samsung";
@@ -57,7 +57,7 @@ class BrandTest {
     }
 
     @Test
-    @DisplayName("Cuando el nombre de la marca excede la longitud máxima permitida, debería lanzar InvalidBrandLengthException")
+    @DisplayName("When the brand name exceeds the maximum allowed length, it should throw InvalidBrandLengthException")
     void createBrandWithTooLongNameThrowsException() {
         // GIVEN
         String name = "A".repeat(DomainConstants.MAX_BRAND_NAME_LENGTH + 1);
@@ -72,7 +72,7 @@ class BrandTest {
     }
 
     @Test
-    @DisplayName("Cuando la descripción de la marca excede la longitud máxima permitida, debería lanzar InvalidBrandLengthException")
+    @DisplayName("When the brand description exceeds the maximum allowed length, it should throw InvalidBrandLengthException")
     void createBrandWithTooLongDescriptionThrowsException() {
         // GIVEN
         String name = "Samsung";
